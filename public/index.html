@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>不用品かんたん売却プランAI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.6}
+.container{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;text-align:center;padding:20px 0 8px;color:#1d1d1f}
+.subtitle{text-align:center;font-size:0.85rem;color:#86868b;margin-bottom:20px}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+label{display:block;font-size:0.85rem;font-weight:600;color:#1d1d1f;margin-bottom:6px;margin-top:14px}
+label:first-child{margin-top:0}
+input[type="text"],select{width:100%;padding:12px;border:1px solid #d2d2d7;border-radius:8px;font-size:1rem;background:#fff;color:#1d1d1f;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2386868b' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+input:focus,select:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px rgba(0,113,227,0.15)}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity 0.2s}
+.btn-primary{background:#0071e3;color:#fff}
+.btn-primary:hover{opacity:0.85}
+.btn-primary:disabled{background:#d2d2d7;cursor:not-allowed}
+.btn-clear{background:none;color:#0071e3;font-size:0.9rem;margin-top:8px;padding:8px}
+.actions{margin-top:20px;padding-bottom:env(safe-area-inset-bottom,16px)}
+#result-area{display:none}
+#result-content{font-size:0.95rem;line-height:1.8}
+#result-content h1{font-size:1.2rem;text-align:left;padding:12px 0 8px}
+#result-content h2{font-size:1.05rem;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e5ea}
+#result-content h3{font-size:0.95rem;margin:12px 0 6px}
+#result-content ul,#result-content ol{padding-left:20px;margin:8px 0}
+#result-content li{margin:4px 0}
+#result-content a{color:#0071e3;text-decoration:none}
+#result-content a:hover{text-decoration:underline}
+#result-content table{width:100%;border-collapse:collapse;margin:8px 0;font-size:0.85rem}
+#result-content th,#result-content td{border:1px solid #e5e5ea;padding:8px;text-align:left}
+#result-content th{background:#f5f5f7;font-weight:600}
+#result-content blockquote{border-left:3px solid #0071e3;padding:8px 12px;margin:8px 0;background:#f5f5f7;border-radius:0 8px 8px 0;font-size:0.9rem}
+#result-content code{background:#f5f5f7;padding:2px 6px;border-radius:4px;font-size:0.85rem}
+#result-content pre{background:#1d1d1f;color:#f5f5f7;padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-size:0.85rem}
+#result-content pre code{background:none;padding:0;color:inherit}
+.loading{text-align:center;padding:40px 0}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid #e5e5ea;border-top-color:#0071e3;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:12px;color:#86868b;font-size:0.9rem}
+.error{background:#fff2f2;border:1px solid #ff3b30;border-radius:8px;padding:12px;color:#ff3b30;font-size:0.9rem;margin:12px 0}
+.tag{display:inline-block;background:#e5e5ea;color:#1d1d1f;padding:2px 8px;border-radius:12px;font-size:0.8rem;margin:2px}
+footer{text-align:center;padding:20px 0;font-size:0.75rem;color:#86868b}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏷️ 不用品かんたん売却プランAI</h1>
+  <p class="subtitle">売却プランとセールスコピーをAIが作成します</p>
+
+  <!-- フォーム -->
+  <div id="form-area">
+    <div class="card">
+      <label for="item_name">品目名 <span style="color:#ff3b30">*</span></label>
+      <input type="text" id="item_name" placeholder="例: パナソニック 電子レンジ NE-FL100" required>
+
+      <label for="category">カテゴリ <span style="color:#ff3b30">*</span></label>
+      <select id="category">
+        <option value="">選択してください</option>
+        <option>家電</option><option>衣類</option><option>書籍</option>
+        <option>家具</option><option>ゲーム・おもちゃ</option><option>ベビー・キッズ</option>
+        <option>スポーツ</option><option>食器・雑貨</option><option>楽器</option><option>その他</option>
+      </select>
+
+      <label for="condition">状態 <span style="color:#ff3b30">*</span></label>
+      <select id="condition">
+        <option value="">選択してください</option>
+        <option>新品・未使用</option><option>未使用に近い</option>
+        <option>目立った傷や汚れなし</option><option>やや傷や汚れあり</option>
+        <option>傷や汚れあり</option><option>全体的に状態が悪い</option>
+        <option>ジャンク・動作未確認</option>
+      </select>
+
+      <label for="purchase_period">購入時期 <span class="tag">任意</span></label>
+      <input type="text" id="purchase_period" placeholder="例: 3年前、2020年頃">
+
+      <label for="preferred_channel">希望販路</label>
+      <select id="preferred_channel">
+        <option>ネット販売</option><option>リアル販売</option><option>両方</option>
+      </select>
+
+      <label for="urgency">売却タイミング</label>
+      <select id="urgency">
+        <option>すぐ売りたい</option><option>じっくり売りたい</option>
+      </select>
+
+      <label for="touch_up">手直し希望</label>
+      <select id="touch_up">
+        <option>なし</option><option>あり</option>
+      </select>
+
+      <label for="report_type">レポート形式</label>
+      <select id="report_type">
+        <option>簡易版</option><option>詳細版</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-generate" onclick="generate()">✨ レポートを作成</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result-area">
+    <div id="result-loading" class="card loading" style="display:none">
+      <div class="spinner"></div>
+      <p class="loading-text">AIがレポートを作成中…（30秒〜1分程度）</p>
+    </div>
+    <div id="result-error" class="error" style="display:none"></div>
+    <div class="card">
+      <div id="result-content"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="backToForm()">← 新しい品目を入力</button>
+      <button class="btn btn-clear" onclick="copyResult()">📋 結果をコピー</button>
+    </div>
+  </div>
+
+  <footer>
+    ※ AIによる参考情報です。最新の手数料・送料・相場は各プラットフォーム公式でご確認ください。
+  </footer>
+</div>
+
+<!-- Markdown変換ライブラリ（CDN） -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+async function generate() {
+  // バリデーション
+  const item_name = $('item_name').value.trim();
+  const category = $('category').value;
+  const condition = $('condition').value;
+  if (!item_name) { alert('品目名を入力してください'); return; }
+  if (!category) { alert('カテゴリを選択してください'); return; }
+  if (!condition) { alert('状態を選択してください'); return; }
+
+  // UI切替
+  $('form-area').style.display = 'none';
+  $('result-area').style.display = 'block';
+  $('result-loading').style.display = 'block';
+  $('result-error').style.display = 'none';
+  $('result-content').innerHTML = '';
+
+  // リクエスト
+  const body = {
+    item_name,
+    category,
+    condition,
+    purchase_period: $('purchase_period').value.trim(),
+    preferred_channel: $('preferred_channel').value,
+    urgency: $('urgency').value,
+    touch_up: $('touch_up').value,
+    report_type: $('report_type').value
+  };
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    $('result-loading').style.display = 'none';
+
+    if (!res.ok) {
+      const err = await res.text();
+      $('result-error').style.display = 'block';
+      $('result-error').textContent = 'エラーが発生しました: ' + (err || res.status);
+      return;
+    }
+
+    const data = await res.json();
+    const md = data.content || data.text || '結果を取得できませんでした';
+    $('result-content').innerHTML = marked.parse(md);
+  } catch (e) {
+    $('result-loading').style.display = 'none';
+    $('result-error').style.display = 'block';
+    $('result-error').textContent = '通信エラー: ' + e.message;
+  }
+}
+
+function backToForm() {
+  $('form-area').style.display = 'block';
+  $('result-area').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function copyResult() {
+  const text = $('result-content').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('コピーしました');
+  }).catch(() => {
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('コピーしました');
+  });
+}
+</script>
+</body>
+</html>
