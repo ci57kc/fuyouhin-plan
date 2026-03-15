@@ -13,16 +13,16 @@ h1{font-size:1.3rem;text-align:center;padding:20px 0 8px;color:#1d1d1f}
 .card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
 label{display:block;font-size:0.85rem;font-weight:600;color:#1d1d1f;margin-bottom:6px;margin-top:14px}
 label:first-child{margin-top:0}
-input[type="text"],select{width:100%;padding:12px;border:1px solid #d2d2d7;border-radius:8px;font-size:1rem;background:#fff;color:#1d1d1f;-webkit-appearance:none;appearance:none}
+input[type="text"],input[type="password"],select{width:100%;padding:12px;border:1px solid #d2d2d7;border-radius:8px;font-size:1rem;background:#fff;color:#1d1d1f;-webkit-appearance:none;appearance:none}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2386868b' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
 input:focus,select:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px rgba(0,113,227,0.15)}
 .btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity 0.2s}
 .btn-primary{background:#0071e3;color:#fff}
 .btn-primary:hover{opacity:0.85}
-.btn-primary:disabled{background:#d2d2d7;cursor:not-allowed}
+.btn-primary:disabled{background:#d2d2d7;cursor:not-allowed;opacity:1}
 .btn-clear{background:none;color:#0071e3;font-size:0.9rem;margin-top:8px;padding:8px}
 .actions{margin-top:20px;padding-bottom:env(safe-area-inset-bottom,16px)}
-#result-area{display:none}
+.hidden{display:none}
 #result-content{font-size:0.95rem;line-height:1.8}
 #result-content h1{font-size:1.2rem;text-align:left;padding:12px 0 8px}
 #result-content h2{font-size:1.05rem;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e5ea}
@@ -44,7 +44,9 @@ input:focus,select:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px 
 .loading-text{margin-top:12px;color:#86868b;font-size:0.9rem}
 .error{background:#fff2f2;border:1px solid #ff3b30;border-radius:8px;padding:12px;color:#ff3b30;font-size:0.9rem;margin:12px 0}
 .tag{display:inline-block;background:#e5e5ea;color:#1d1d1f;padding:2px 8px;border-radius:12px;font-size:0.8rem;margin:2px}
+.lock-icon{font-size:2rem;text-align:center;margin-bottom:8px}
 footer{text-align:center;padding:20px 0;font-size:0.75rem;color:#86868b}
+.turnstile-wrap{display:flex;justify-content:center;margin:16px 0 4px}
 </style>
 </head>
 <body>
@@ -52,8 +54,21 @@ footer{text-align:center;padding:20px 0;font-size:0.75rem;color:#86868b}
   <h1>🏷️ 不用品かんたん売却プランAI</h1>
   <p class="subtitle">売却プランとセールスコピーをAIが作成します</p>
 
-  <!-- フォーム -->
-  <div id="form-area">
+  <!-- ===== パスワード画面 ===== -->
+  <div id="auth-area">
+    <div class="card">
+      <div class="lock-icon">🔒</div>
+      <label for="password">パスワード</label>
+      <input type="password" id="password" placeholder="パスワードを入力" autocomplete="current-password">
+      <div id="auth-error" class="error hidden"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-auth" onclick="authenticate()">ログイン</button>
+    </div>
+  </div>
+
+  <!-- ===== フォーム ===== -->
+  <div id="form-area" class="hidden">
     <div class="card">
       <label for="item_name">品目名 <span style="color:#ff3b30">*</span></label>
       <input type="text" id="item_name" placeholder="例: パナソニック 電子レンジ NE-FL100" required>
@@ -99,18 +114,24 @@ footer{text-align:center;padding:20px 0;font-size:0.75rem;color:#86868b}
       </select>
     </div>
 
+    <!-- Turnstile ウィジェット -->
+    <div class="turnstile-wrap">
+      <div class="cf-turnstile" data-sitekey="TURNSTILE_SITE_KEY_PLACEHOLDER" data-callback="onTurnstileSuccess" data-theme="light"></div>
+    </div>
+
     <div class="actions">
-      <button class="btn btn-primary" id="btn-generate" onclick="generate()">✨ レポートを作成</button>
+      <button class="btn btn-primary" id="btn-generate" onclick="generate()" disabled>✨ レポートを作成</button>
+      <p style="text-align:center;font-size:0.8rem;color:#86868b;margin-top:6px">☝️ 上のチェックを完了してからボタンを押してください</p>
     </div>
   </div>
 
-  <!-- 結果 -->
-  <div id="result-area">
-    <div id="result-loading" class="card loading" style="display:none">
+  <!-- ===== 結果 ===== -->
+  <div id="result-area" class="hidden">
+    <div id="result-loading" class="card loading hidden">
       <div class="spinner"></div>
       <p class="loading-text">AIがレポートを作成中…（30秒〜1分程度）</p>
     </div>
-    <div id="result-error" class="error" style="display:none"></div>
+    <div id="result-error" class="error hidden"></div>
     <div class="card">
       <div id="result-content"></div>
     </div>
@@ -125,13 +146,81 @@ footer{text-align:center;padding:20px 0;font-size:0.75rem;color:#86868b}
   </footer>
 </div>
 
-<!-- Markdown変換ライブラリ（CDN） -->
+<!-- Turnstile -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<!-- Markdown変換 -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+let turnstileToken = null;
+let sessionToken = localStorage.getItem('session_token') || null;
 
+// --- 起動時: セッション確認 ---
+(function init() {
+  if (sessionToken) {
+    showForm();
+  }
+})();
+
+// --- Turnstile コールバック ---
+function onTurnstileSuccess(token) {
+  turnstileToken = token;
+  $('btn-generate').disabled = false;
+}
+
+// --- パスワード認証 ---
+async function authenticate() {
+  const pw = $('password').value;
+  if (!pw) { showAuthError('パスワードを入力してください'); return; }
+
+  $('btn-auth').disabled = true;
+  $('btn-auth').textContent = '認証中…';
+  $('auth-error').classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showAuthError(data.error || '認証に失敗しました');
+      $('btn-auth').disabled = false;
+      $('btn-auth').textContent = 'ログイン';
+      return;
+    }
+
+    sessionToken = data.token;
+    localStorage.setItem('session_token', sessionToken);
+    showForm();
+  } catch (e) {
+    showAuthError('通信エラー: ' + e.message);
+    $('btn-auth').disabled = false;
+    $('btn-auth').textContent = 'ログイン';
+  }
+}
+
+function showAuthError(msg) {
+  $('auth-error').textContent = msg;
+  $('auth-error').classList.remove('hidden');
+}
+
+function showForm() {
+  $('auth-area').classList.add('hidden');
+  $('form-area').classList.remove('hidden');
+}
+
+// --- Enterキーでログイン ---
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !$('auth-area').classList.contains('hidden')) {
+    authenticate();
+  }
+});
+
+// --- レポート生成 ---
 async function generate() {
-  // バリデーション
   const item_name = $('item_name').value.trim();
   const category = $('category').value;
   const condition = $('condition').value;
@@ -139,54 +228,70 @@ async function generate() {
   if (!category) { alert('カテゴリを選択してください'); return; }
   if (!condition) { alert('状態を選択してください'); return; }
 
-  // UI切替
-  $('form-area').style.display = 'none';
-  $('result-area').style.display = 'block';
-  $('result-loading').style.display = 'block';
-  $('result-error').style.display = 'none';
+  $('form-area').classList.add('hidden');
+  $('result-area').classList.remove('hidden');
+  $('result-loading').classList.remove('hidden');
+  $('result-error').classList.add('hidden');
   $('result-content').innerHTML = '';
 
-  // リクエスト
   const body = {
-    item_name,
-    category,
-    condition,
+    item_name, category, condition,
     purchase_period: $('purchase_period').value.trim(),
     preferred_channel: $('preferred_channel').value,
     urgency: $('urgency').value,
     touch_up: $('touch_up').value,
-    report_type: $('report_type').value
+    report_type: $('report_type').value,
+    turnstile_token: turnstileToken
   };
 
   try {
     const res = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Token': sessionToken
+      },
       body: JSON.stringify(body)
     });
 
-    $('result-loading').style.display = 'none';
+    $('result-loading').classList.add('hidden');
+
+    if (res.status === 401) {
+      // セッション切れ → 再認証
+      localStorage.removeItem('session_token');
+      sessionToken = null;
+      $('result-area').classList.add('hidden');
+      $('auth-area').classList.remove('hidden');
+      showAuthError('セッションが切れました。再度ログインしてください。');
+      return;
+    }
 
     if (!res.ok) {
-      const err = await res.text();
-      $('result-error').style.display = 'block';
-      $('result-error').textContent = 'エラーが発生しました: ' + (err || res.status);
+      const err = await res.json().catch(() => ({}));
+      $('result-error').textContent = err.error || 'エラーが発生しました (' + res.status + ')';
+      $('result-error').classList.remove('hidden');
       return;
     }
 
     const data = await res.json();
-    const md = data.content || data.text || '結果を取得できませんでした';
+    const md = data.content || '結果を取得できませんでした';
     $('result-content').innerHTML = marked.parse(md);
+
+    // Turnstileリセット（次回用）
+    turnstileToken = null;
+    $('btn-generate').disabled = true;
+    if (window.turnstile) { turnstile.reset(); }
+
   } catch (e) {
-    $('result-loading').style.display = 'none';
-    $('result-error').style.display = 'block';
+    $('result-loading').classList.add('hidden');
     $('result-error').textContent = '通信エラー: ' + e.message;
+    $('result-error').classList.remove('hidden');
   }
 }
 
 function backToForm() {
-  $('form-area').style.display = 'block';
-  $('result-area').style.display = 'none';
+  $('form-area').classList.remove('hidden');
+  $('result-area').classList.add('hidden');
   window.scrollTo(0, 0);
 }
 
@@ -195,7 +300,6 @@ function copyResult() {
   navigator.clipboard.writeText(text).then(() => {
     alert('コピーしました');
   }).catch(() => {
-    // フォールバック
     const ta = document.createElement('textarea');
     ta.value = text;
     document.body.appendChild(ta);
